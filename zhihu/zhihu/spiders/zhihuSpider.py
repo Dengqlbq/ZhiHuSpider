@@ -1,6 +1,7 @@
 import scrapy
 import re
 from zhihu.items import ZhihuItem
+import json
 
 
 class ZhiHuSpider(scrapy.Spider):
@@ -17,51 +18,58 @@ class ZhiHuSpider(scrapy.Spider):
         'Host': 'www.zhihu.com',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 ('
                       'KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36',
-        'Referer': 'http://www.zhihu.com/',
+        'Referer': 'https://www.zhihu.com/',
     }
 
     post_data = {
-        'password': 'passssssss',
         'captcha_type': 'cn',
-        'email': '123456789@qq.com'
+        'email': '123456@qq.com',
+        'password': 'password',
     }
 
     def start_requests(self):
-        yield scrapy.Request('https://www.zhihu.com', headers=self.headers, callback=self.login_zhihu)
+        yield scrapy.Request('https://www.zhihu.com/', headers=self.headers,
+                             callback=self.login_zhihu)
 
     def login_zhihu(self, response):
-        xsrf = re.findall(r'name="_xsrf" value="(.*?)"', response.text)[0]
+        xsrf = re.findall(r'name="_xsrf" value="(.*?)"/>', response.text)[0]
         self.headers['X-Xsrftoken'] = xsrf
+        self.post_data['_xsrf'] = xsrf
         times = re.findall(r'<script type="text/json" class="json-inline" data-n'
                            r'ame="ga_vars">{"user_created":0,"now":(\d+),', response.text)[0]
-        captcha_url = 'https://zhihu.com' + 'captcha.gif?r=' + times + '&type=login&lang=cn'
-        yield scrapy.Request(captcha_url, headers=self.headers, callback=self.veri_captcha)
+        captcha_url = 'https://www.zhihu.com/' + 'captcha.gif?r=' + times + '&type=login&lang=cn'
+        # print(captcha_url)
+        # print(self.headers)
+        yield scrapy.Request(captcha_url, headers=self.headers, meta={'post_data': self.post_data},
+                             callback=self.veri_captcha)
 
     def veri_captcha(self, response):
         with open('captcha.jpg', 'wb') as f:
             f.write(response.body)
-            f.close()
         loca1 = input('input the loca 1:')
         loca2 = input('input the loca 2:')
         captcha = self.location(loca1, loca2)
+        self.post_data = response.meta.get('post_data', {})
         self.post_data['captcha'] = captcha
         post_url = 'https://www.zhihu.com/login/email'
-        yield scrapy.FormRequest(post_url, formdata=self.post_data, headers=self.headers, callback=self.login_success)
+        yield scrapy.FormRequest(post_url, formdata=self.post_data, headers=self.headers,
+                                 callback=self.login_success)
 
     def location(self, a, b):
-        a = 20 * int(a) +2
+        a = 53 * int(a) +2
         if b != 0:
-            b = 20 * int(b) +2
-            captcha = "{\"img_size\":[200,44],\"input_points\":[[%s,26.45],[%s,29.45]]}" %(int(a),int(b))
+            b = 53 * int(b) +2
+            captcha = "{\"img_size\":[400,88],\"input_points\":[[%s,40.45],[%s,40.45]]}" % (int(a), int(b))
         else:
-            captcha = "{\"img_size\":[200,44],\"input_points\":[[%s,26.45]]}" % a
+            captcha = "{\"img_size\":[400,88],\"input_points\":[[%s,40.45]]}" % a
         return captcha
 
     def login_success(self, response):
         if 'err' in response.text:
-            pass
+            print("error!!!!!!")
         else:
-            yield scrapy.Request('https://www.zhihu.com', headers=self.headers)
+            print("successful!!!!!!")
+            yield scrapy.Request('https://www.zhihu.com', headers=self.headers, dont_filter=True)
 
     def parse(self, response):
         item = ZhihuItem()
