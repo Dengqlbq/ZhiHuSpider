@@ -23,3 +23,13 @@ class ZhihuQuestionItem(scrapy.Item):
     comment_count = scrapy.Field()
     flower_count = scrapy.Field()
     date_created = scrapy.Field()
+
+
+class ZhihuAnswerItem(scrapy.Item):
+
+    question_id = scrapy.Field()
+    author = scrapy.Field()
+    ans_url = scrapy.Field()
+    comment_count = scrapy.Field()
+    upvote_count = scrapy.Field()
+    excerpt = scrapy.Field()

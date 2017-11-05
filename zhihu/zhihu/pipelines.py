@@ -25,10 +25,14 @@ class ZhihuPipeline(object):
 
     def process_item(self, item, spider):
 
-        sql = 'insert into Scrapy_test.zhihuQuestion(name,url,keywords,answer_count,' \
-              'flower_count,comment_count,date_created) values (%s,%s,%s,%s,%s,%s,%s)'
-        self.cursor.execute(sql, (item['name'], item['url'], item['keywords'], item['answer_count'],
-                                  item['flower_count'], item['comment_count'], item['date_created']))
+        if item.__class__.__name__ == 'ZhihuQuestionItem':
+            sql = 'insert into Scrapy_test.zhihuQuestion(name,url,keywords,answer_count,' \
+                  'flower_count,comment_count,date_created) values (%s,%s,%s,%s,%s,%s,%s)'
+            self.cursor.execute(sql, (item['name'], item['url'], item['keywords'], item['answer_count'],
+                                      item['flower_count'], item['comment_count'], item['date_created']))
+        else:
+            sql = 'insert into Scrapy_test.zhihuAnswer(question_id,author,ans_url,upvote_count,comment_count,excerpt)'\
+                  'values (%s,%s,%s,%s,%s,%s)'
+            self.cursor.execute(sql, (item['question_id'], item['author'], item['ans_url'], item['upvote_count'],
+                                      item['comment_count'], item['excerpt']))
         self.connect.commit()
-        return item
-

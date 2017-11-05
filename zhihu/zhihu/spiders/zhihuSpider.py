@@ -1,7 +1,7 @@
 import scrapy
 import re
-from zhihu.items import ZhihuItem
-from zhihu.items import ZhihuQuestionItem
+from zhihu.items import ZhihuQuestionItem, ZhihuAnswerItem
+import json
 
 
 class ZhiHuSpider(scrapy.Spider):
@@ -23,7 +23,7 @@ class ZhiHuSpider(scrapy.Spider):
 
     post_data = {
         'captcha_type': 'cn',
-        'email': '123456@qq.com',
+        'email': '123456789@qq.com',
         'password': 'password',
     }
 
@@ -37,6 +37,16 @@ class ZhiHuSpider(scrapy.Spider):
         [151.89, 23.380000000000002]
     ]
 
+    more_answer_url = 'https://www.zhihu.com/api/v4/questions/{0}/answers?include=data%5B*%5D.i' \
+                      's_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_actio' \
+                      'n%2Cannotation_detail%2Ccollapse_reason%2Cis_sticky%2Ccollapsed_by%2Csuggest_ed' \
+                      'it%2Ccomment_count%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2' \
+                      'Creshipment_settings%2Ccomment_permission%2Ccreated_time%2Cupdated_time%2Crevie' \
+                      'w_info%2Cquestion%2Cexcerpt%2Crelationship.is_authorized%2Cis_author%2Cvoting%2' \
+                      'Cis_thanked%2Cis_nothelp%2Cupvoted_followees%3Bdata%5B*%5D.mark_infos%5B*%5D.ur' \
+                      'l%3Bdata%5B*%5D.author.follower_count%2Cbadge%5B%3F(type%3Dbest_answerer)%5D.t' \
+                      'opics&offset={1}&limit={2}&sort_by=default'
+
     def start_requests(self):
 
         yield scrapy.Request('https://www.zhihu.com/', headers=self.headers,
@@ -47,6 +57,7 @@ class ZhiHuSpider(scrapy.Spider):
         xsrf = re.findall(r'name="_xsrf" value="(.*?)"/>', response.text)[0]
         self.headers['X-Xsrftoken'] = xsrf
         self.post_data['_xsrf'] = xsrf
+
         times = re.findall(r'<script type="text/json" class="json-inline" data-n'
                            r'ame="ga_vars">{"user_created":0,"now":(\d+),', response.text)[0]
         captcha_url = 'https://www.zhihu.com/' + 'captcha.gif?r=' + times + '&type=login&lang=cn'
@@ -58,12 +69,14 @@ class ZhiHuSpider(scrapy.Spider):
 
         with open('captcha.jpg', 'wb') as f:
             f.write(response.body)
+
         loca1 = input('input the loca 1:')
         loca2 = input('input the loca 2:')
         captcha = self.location(loca1, loca2)
         self.post_data = response.meta.get('post_data', {})
         self.post_data['captcha'] = captcha
         post_url = 'https://www.zhihu.com/login/email'
+
         yield scrapy.FormRequest(post_url, formdata=self.post_data, headers=self.headers,
                                  callback=self.login_success)
 
@@ -90,6 +103,7 @@ class ZhiHuSpider(scrapy.Spider):
     def parse(self, response):
 
         question_ursl = re.findall(r'https://www.zhihu.com/question/(\d+)', response.text)
+
         for url in question_ursl:
             question_detail = 'https://www.zhihu.com/question/' + url
             yield scrapy.Request(question_detail, headers=self.headers, callback=self.parse_question)
@@ -102,8 +116,31 @@ class ZhiHuSpider(scrapy.Spider):
         item['name'] = re.findall(r'<meta itemprop="name" content="(.*?)"', text)[0]
         item['url'] = re.findall(r'<meta itemprop="url" content="(.*?)"', text)[0]
         item['keywords'] = re.findall(r'<meta itemprop="keywords" content="(.*?)"', text)[0]
-        item['answer_count'] = int(re.findall(r'<meta itemprop="answerCount" content="(.*?)"', text)[0])
-        item['comment_count'] = int(re.findall(r'<meta itemprop="commentCount" content="(.*?)"', text)[0])
-        item['flower_count'] = int(re.findall(r'<meta itemprop="zhihu:followerCount" content="(.*?)"', text)[0])
+        item['answer_count'] = re.findall(r'<meta itemprop="answerCount" content="(.*?)"', text)[0]
+        item['comment_count'] = re.findall(r'<meta itemprop="commentCount" content="(.*?)"', text)[0]
+        item['flower_count'] = re.findall(r'<meta itemprop="zhihu:followerCount" content="(.*?)"', text)[0]
         item['date_created'] = re.findall(r'<meta itemprop="dateCreated" content="(.*?)"', text)[0]
+
         yield item
+
+        question_id = int(re.match(r'https://www.zhihu.com/question/(\d+)', response.url).group(1))
+        yield scrapy.Request(self.more_answer_url.format(question_id, 10, 30), headers=self.headers,
+                             callback=self.parse_answer)
+
+    def parse_answer(self, response):
+
+        answers = json.loads(response.text)
+
+        for ans in answers['data']:
+            item = ZhihuAnswerItem()
+            item['question_id'] = re.match(r'http://www.zhihu.com/api/v4/questions/(\d+)', ans['question']['url']).group(1)
+            item['author'] = ans['author']['name']
+            item['ans_url'] = ans['url']
+            item['comment_count'] = ans['comment_count']
+            item['upvote_count'] = ans['voteup_count']
+            item['excerpt'] = ans['excerpt']
+
+            yield item
+
+
+
