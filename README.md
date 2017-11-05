@@ -6,7 +6,7 @@
 1. Python 3.6
 2. Scrapy 1.4
 
-#### 项目地址：http://blog.csdn.net/sinat_34200786/article/details/78449499
+#### 博客地址：http://blog.csdn.net/sinat_34200786/article/details/78449499
 ---
 ### 进度：
 1. ~~模拟登录  (done)~~
