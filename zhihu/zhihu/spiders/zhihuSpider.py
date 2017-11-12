@@ -27,7 +27,7 @@ class ZhiHuSpider(scrapy.Spider):
         'password': 'password',
     }
 
-    # 验证码的文字位置是固定的
+    # 验证码的文字位置都是固定的
     capacha_index = [
         [12.95, 14.969999999999998],
         [36.1, 16.009999999999998],
