@@ -23,8 +23,8 @@ class ZhiHuSpider(scrapy.Spider):
 
     post_data = {
         'captcha_type': 'cn',
-        'email': '610426459@qq.com',
-        'password': 'zhihu,wohen.610',
+        'email': '123456789@qq.com',
+        'password': 'password',
     }
 
     # 验证码的文字位置是固定的
