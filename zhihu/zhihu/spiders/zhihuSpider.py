@@ -124,12 +124,16 @@ class ZhiHuSpider(scrapy.Spider):
         item['flower_count'] = re.findall(r'<meta itemprop="zhihu:followerCount" content="(.*?)"', text)[0]
         item['date_created'] = re.findall(r'<meta itemprop="dateCreated" content="(.*?)"', text)[0]
 
+        count_answer = int(item['answer_count'])
         yield item
 
         question_id = int(re.match(r'https://www.zhihu.com/question/(\d+)', response.url).group(1))
-        # 此处为获取该问题第10到第30的答案
-        yield scrapy.Request(self.more_answer_url.format(question_id, 10, 30), headers=self.headers,
-                             callback=self.parse_answer)
+        # 因为每次只能获取20个答案
+        n = 0
+        while n < count_answer:
+            yield scrapy.Request(self.more_answer_url.format(question_id, n, n + 20), headers=self.headers,
+                                 callback=self.parse_answer)
+            n += 20
 
     def parse_answer(self, response):
         """ 解析获取到的指定范围答案 """
