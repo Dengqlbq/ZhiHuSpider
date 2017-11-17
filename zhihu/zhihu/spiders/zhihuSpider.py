@@ -38,6 +38,12 @@ class ZhiHuSpider(scrapy.Spider):
         [151.89, 23.380000000000002]
     ]
 
+    # 翻页请求问题相关
+    next_page = 'https://www.zhihu.com/api/v3/feed/topstory?action_feed=True&limit=10&' \
+                'session_token={0}&action=down&after_id={1}&desktop=true'
+    session_token = ''
+    after_id = 10
+
     # 点击查看更多答案触发的url
     more_answer_url = 'https://www.zhihu.com/api/v4/questions/{0}/answers?include=data%5B*%5D.i' \
                       's_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_actio' \
@@ -105,11 +111,21 @@ class ZhiHuSpider(scrapy.Spider):
 
     def parse(self, response):
         """ 获取首页问题 """
-        question_ursl = re.findall(r'https://www.zhihu.com/question/(\d+)', response.text)
-
-        for url in question_ursl:
+        question_urls = re.findall(r'https://www.zhihu.com/question/(\d+)', response.text)
+        self.session_token = re.findall(r'session_token=([0-9,a-z]{32})', response.text)[0]
+        # 获取认证信息，翻页时用到
+        auto = re.findall(r'carCompose&quot;:&quot;(.*?)&quot', response.text)[0]
+        self.headers['authorization'] = 'Bearer ' + auto
+        # 首页第一页问题
+        for url in question_urls:
             question_detail = 'https://www.zhihu.com/question/' + url
             yield scrapy.Request(question_detail, headers=self.headers, callback=self.parse_question)
+
+        # 首页翻页后的问题，测试数据量为200
+        while self.after_id < 200:
+            yield scrapy.Request(self.next_page.format(self.session_token, self.after_id), headers=self.headers,
+                                 callback=self.get_more_question)
+            self.after_id += 10
 
     def parse_question(self, response):
         """ 解析问题详情及获取指定范围答案 """
@@ -128,12 +144,24 @@ class ZhiHuSpider(scrapy.Spider):
         yield item
 
         question_id = int(re.match(r'https://www.zhihu.com/question/(\d+)', response.url).group(1))
-        # 因为每次只能获取20个答案
+        # 因为每次只能获取20个答案, 测试数据量为200
         n = 0
+        if count_answer > 200:
+            count_answer = 200
         while n < count_answer:
-            yield scrapy.Request(self.more_answer_url.format(question_id, n, n + 20), headers=self.headers,
+            yield scrapy.Request(self.more_answer_url.format(question_id, 0, n), headers=self.headers,
                                  callback=self.parse_answer)
             n += 20
+
+    def get_more_question(self, response):
+
+        question_url = 'https://www.zhihu.com/question/{0}'
+        questions = json.loads(response.text)
+
+        for que in questions['data']:
+            question_id = re.findall(r'(\d+)', que['target']['question']['url'])[0]
+            yield scrapy.Request(question_url.format(question_id), headers=self.headers,
+                                 callback=self.parse_question)
 
     def parse_answer(self, response):
         """ 解析获取到的指定范围答案 """
