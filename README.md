@@ -1,6 +1,6 @@
 # ZhiHuSpider
 
-### 目标：爬取知乎首页前x个问题(many)的详情及问题指定范围内的答案(many)
+### 目标：爬取知乎首页前x个问题(many)的详情及问题指定范围内的答案(many)的摘要
 
 ### power by:
 1. Python 3.6
