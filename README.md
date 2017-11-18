@@ -10,21 +10,25 @@
 
 #### 博客地址：http://blog.csdn.net/sinat_34200786/article/details/78449499
 ---
-### How to use：
+### How to use ?
 
 ```
-git clone 
+git clone https://github.com/Dengqlbq/ZhiHuSpider
 ```
+
 Rewrite the POST_DATA, QUESTION_COUNT, ANSWER_COUNT_PER_QUESTION, ANSWER_OFFSET and Mysql information
 in settings.py
 
 ```
-Note: Before you run the project, make sure that you have created tables match the requirement 
+cd zhihu/zhihu
 ```
+
 ```
 scrapy crawl zhihu
 ```
-
+```
+Note: Before you run the project, make sure that you have created tables match the requirement 
+```
 ---
-###图片展示
+### 图片展示
 
