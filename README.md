@@ -13,7 +13,7 @@
 ### How to use ?
 
 ```
-git clone https://github.com/Dengqlbq/ZhiHuSpider
+git clone https://github.com/Dengqlbq/ZhiHuSpider.git
 ```
 
 Rewrite the POST_DATA, QUESTION_COUNT, ANSWER_COUNT_PER_QUESTION, ANSWER_OFFSET and Mysql information
