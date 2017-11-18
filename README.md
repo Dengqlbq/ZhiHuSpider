@@ -8,7 +8,7 @@
 3. json
 4. pymysql
 
-#### 博客地址：http://blog.csdn.net/sinat_34200786/article/details/78449499
+#### Blog：http://blog.csdn.net/sinat_34200786/article/details/78449499
 ---
 ### How to use ?
 
@@ -26,9 +26,13 @@ cd zhihu/zhihu
 ```
 scrapy crawl zhihu
 ```
+
 ```
 Note: Before you run the project, make sure that you have created tables match the requirement 
 ```
 ---
-### 图片展示
+### Achievement
 
+![1](https://github.com/Dengqlbq/ZhiHuSpider/blob/master/Image/question.png)
+
+![2](https://github.com/Dengqlbq/ZhiHuSpider/blob/master/Image/answer.png)
