@@ -2,6 +2,7 @@ import scrapy
 import re
 from zhihu.items import ZhihuQuestionItem, ZhihuAnswerItem
 import json
+from scrapy.utils.project import get_project_settings
 
 
 class ZhiHuSpider(scrapy.Spider):
@@ -10,22 +11,12 @@ class ZhiHuSpider(scrapy.Spider):
     start_urls = ['https://zhihu.com']
     allowed_domains = ['www.zhihu.com']
 
-    headers = {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, sdch',
-        'Accept-Language': 'en-US,en;q=0.8,zh-CN;q=0.6,zh;q=0.4,zh-TW;q=0.2',
-        'Connection': 'keep-alive',
-        'Host': 'www.zhihu.com',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 ('
-                      'KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36',
-        'Referer': 'https://www.zhihu.com/',
-    }
-
-    post_data = {
-        'captcha_type': 'cn',
-        'email': '123456789@qq.com',
-        'password': 'password',
-    }
+    setting = get_project_settings()
+    headers = setting['DEFAULT_REQUEST_HEADERS']
+    post_data = setting['POST_DATA']
+    question_count = setting['QUESTION_COUNT']
+    answer_count = setting['ANSWER_COUNT_PER_QUESTION']
+    answer_offset = setting['ANSWER_OFFSET']
 
     # 验证码的文字位置都是固定的
     capacha_index = [
@@ -42,7 +33,6 @@ class ZhiHuSpider(scrapy.Spider):
     next_page = 'https://www.zhihu.com/api/v3/feed/topstory?action_feed=True&limit=10&' \
                 'session_token={0}&action=down&after_id={1}&desktop=true'
     session_token = ''
-    after_id = 10
 
     # 点击查看更多答案触发的url
     more_answer_url = 'https://www.zhihu.com/api/v4/questions/{0}/answers?include=data%5B*%5D.i' \
@@ -57,8 +47,7 @@ class ZhiHuSpider(scrapy.Spider):
 
     def start_requests(self):
 
-        yield scrapy.Request('https://www.zhihu.com/', headers=self.headers,
-                             callback=self.login_zhihu)
+        yield scrapy.Request('https://www.zhihu.com/', callback=self.login_zhihu)
 
     def login_zhihu(self, response):
         """ 获取xsrf及验证码图片 """
@@ -78,9 +67,11 @@ class ZhiHuSpider(scrapy.Spider):
         with open('captcha.jpg', 'wb') as f:
             f.write(response.body)
 
+        print('只有一个倒立文字则第二个位置为0')
         loca1 = input('input the loca 1:')
         loca2 = input('input the loca 2:')
-        captcha = self.location(loca1, loca2)
+        captcha = self.location(int(loca1), int(loca2))
+
         self.post_data = response.meta.get('post_data', {})
         self.post_data['captcha'] = captcha
         post_url = 'https://www.zhihu.com/login/email'
@@ -90,9 +81,6 @@ class ZhiHuSpider(scrapy.Spider):
 
     def location(self, a, b):
         """ 将输入的位置转换为相应信息 """
-        a = int(a)
-        b = int(b)
-        # b = 0代表只有一个倒立文字
         if b != 0:
             captcha = "{\"img_size\":[200,44],\"input_points\":[%s,%s]}" % (str(self.capacha_index[a - 1]),
                                                                             str(self.capacha_index[b - 1]))
@@ -112,20 +100,23 @@ class ZhiHuSpider(scrapy.Spider):
     def parse(self, response):
         """ 获取首页问题 """
         question_urls = re.findall(r'https://www.zhihu.com/question/(\d+)', response.text)
+
+        # 翻页用到的session_token 和 authorization都可在首页源代码找到
         self.session_token = re.findall(r'session_token=([0-9,a-z]{32})', response.text)[0]
-        # 获取认证信息，翻页时用到
         auto = re.findall(r'carCompose&quot;:&quot;(.*?)&quot', response.text)[0]
         self.headers['authorization'] = 'Bearer ' + auto
+
         # 首页第一页问题
         for url in question_urls:
             question_detail = 'https://www.zhihu.com/question/' + url
             yield scrapy.Request(question_detail, headers=self.headers, callback=self.parse_question)
 
-        # 首页翻页后的问题，测试数据量为200
-        while self.after_id < 200:
-            yield scrapy.Request(self.next_page.format(self.session_token, self.after_id), headers=self.headers,
+        # 获取指定数量问题
+        n = 10
+        while n < self.question_count:
+            yield scrapy.Request(self.next_page.format(self.session_token, n), headers=self.headers,
                                  callback=self.get_more_question)
-            self.after_id += 10
+            n += 10
 
     def parse_question(self, response):
         """ 解析问题详情及获取指定范围答案 """
@@ -144,17 +135,18 @@ class ZhiHuSpider(scrapy.Spider):
         yield item
 
         question_id = int(re.match(r'https://www.zhihu.com/question/(\d+)', response.url).group(1))
-        # 因为每次只能获取20个答案, 测试数据量为200
-        n = 0
-        if count_answer > 200:
-            count_answer = 200
-        while n < count_answer:
-            yield scrapy.Request(self.more_answer_url.format(question_id, 0, n), headers=self.headers,
+
+        # 从指定位置开始获取指定数量答案
+        if count_answer > self.answer_count:
+            count_answer = self.answer_count
+        n = self.answer_offset
+        while n + 20 <= count_answer:
+            yield scrapy.Request(self.more_answer_url.format(question_id, n, n + 20), headers=self.headers,
                                  callback=self.parse_answer)
             n += 20
 
     def get_more_question(self, response):
-
+        """ 获取更多首页问题 """
         question_url = 'https://www.zhihu.com/question/{0}'
         questions = json.loads(response.text)
 

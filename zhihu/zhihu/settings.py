@@ -96,3 +96,30 @@ MYSQL_USER = 'root'
 MYSQL_PASSWD = 'password'
 MYSQL_CHARSET = 'utf8'
 MYSQL_PORT = 3306
+
+# Default header
+DEFAULT_REQUEST_HEADERS = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, sdch',
+        'Accept-Language': 'en-US,en;q=0.8,zh-CN;q=0.6,zh;q=0.4,zh-TW;q=0.2',
+        'Connection': 'keep-alive',
+        'Host': 'www.zhihu.com',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 ('
+                      'KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36',
+        'Referer': 'https://www.zhihu.com/',
+    }
+
+# Account information and post data
+POST_DATA = {
+        'captcha_type': 'cn',
+        'email': 'Your_email',
+        'password': 'Your_password',
+    }
+
+# Count of question and answer
+# Notify : The reality count could be collect may be less
+QUESTION_COUNT = 200
+ANSWER_COUNT_PER_QUESTION = 100
+
+# Specify the index where answer start to collect
+ANSWER_OFFSET = 0
