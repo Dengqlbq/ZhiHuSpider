@@ -10,13 +10,21 @@
 
 #### 博客地址：http://blog.csdn.net/sinat_34200786/article/details/78449499
 ---
-### 进度：
-1. ~~模拟登录  (done)~~
-2. ~~首页问题(little)的详情收集及入库  (done)~~
-3. ~~首页问题(little)的第一页答案收集及入库  （done)~~
-4. ~~首页问题(little)指定范围内的答案(little)收集及入库  (done)~~
-5. ~~首页问题(little)指定范围内的答案(many)收集及入库  (done)~~
-6. ~~首页问题(many)指定范围内的答案(many)收集及入库  (done)~~
-7. ~~整理及优化  (done)~~
+### How to use：
+
+```
+git clone 
+```
+Rewrite the POST_DATA, QUESTION_COUNT, ANSWER_COUNT_PER_QUESTION, ANSWER_OFFSET and Mysql information
+in settings.py
+
+```
+Note: Before you run the project, make sure that you have created tables match the requirement 
+```
+```
+scrapy crawl zhihu
+```
 
 ---
+###图片展示
+
