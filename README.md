@@ -8,7 +8,7 @@
 3. json
 4. pymysql
 
-#### Blog：http://blog.csdn.net/sinat_34200786/article/details/78449499
+#### Project blog：http://blog.csdn.net/sinat_34200786/article/details/78449499
 ---
 ### How to use ?
 
