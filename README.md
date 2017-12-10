@@ -2,11 +2,12 @@
 
 ### 目标：爬取知乎首页前x个问题(many)的详情及问题指定范围内的答案(many)的摘要
 
-### power by:
+### Power by:
 1. Python 3.6
 2. Scrapy 1.4
 3. json
 4. pymysql
+5. redis
 
 #### Project blog：http://blog.csdn.net/sinat_34200786/article/details/78449499
 ---
